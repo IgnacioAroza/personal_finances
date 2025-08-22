@@ -57,8 +57,8 @@ export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormP
         });
         onExpenseAdded();
       }
-    } catch (error) {
-      console.error('Error adding expense:', error);
+    } catch {
+      // Error silencioso
     } finally {
       setLoading(false);
     }

@@ -48,7 +48,6 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error('Error creando ingreso:', error);
       return NextResponse.json({ 
         error: 'Error al crear el ingreso' 
       }, { status: 500 });
@@ -59,8 +58,7 @@ export async function POST(request: Request) {
       income 
     });
 
-  } catch (error) {
-    console.error('Error en POST /api/income:', error);
+  } catch {
     return NextResponse.json({ 
       error: 'Error interno del servidor' 
     }, { status: 500 });
@@ -99,7 +97,6 @@ export async function GET() {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error obteniendo ingresos:', error);
       return NextResponse.json({ 
         error: 'Error al obtener ingresos' 
       }, { status: 500 });
@@ -107,8 +104,7 @@ export async function GET() {
 
     return NextResponse.json({ incomes });
 
-  } catch (error) {
-    console.error('Error en GET /api/income:', error);
+  } catch {
     return NextResponse.json({ 
       error: 'Error interno del servidor' 
     }, { status: 500 });

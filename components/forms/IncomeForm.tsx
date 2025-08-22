@@ -57,8 +57,8 @@ export default function IncomeForm({ categories, onIncomeAdded }: IncomeFormProp
         });
         onIncomeAdded();
       }
-    } catch (error) {
-      console.error('Error adding income:', error);
+    } catch {
+      // Error silencioso  
     } finally {
       setLoading(false);
     }

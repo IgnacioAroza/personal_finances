@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { createServerClient } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 import { defaultCategories } from '@/lib/utils';
@@ -9,6 +9,13 @@ export async function POST() {
     
     if (!userId) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    // Obtener información completa del usuario de Clerk
+    const clerkUser = await currentUser();
+    
+    if (!clerkUser) {
+      return NextResponse.json({ error: 'No se pudo obtener información del usuario' }, { status: 400 });
     }
 
     const supabase = createServerClient();
@@ -24,14 +31,21 @@ export async function POST() {
       return NextResponse.json({ message: 'Usuario ya existe', user: existingUser });
     }
 
-    // Crear nuevo usuario
+    console.log('Creando nuevo usuario con datos de Clerk:', {
+      id: clerkUser.id,
+      email: clerkUser.primaryEmailAddress?.emailAddress,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName
+    });
+
+    // Crear nuevo usuario con datos reales de Clerk
     const { data: newUser, error: userError } = await supabase
       .from('users')
       .insert({
         clerk_user_id: userId,
-        email: '', // Se puede obtener de Clerk si es necesario
-        first_name: '',
-        last_name: ''
+        email: clerkUser.primaryEmailAddress?.emailAddress || '',
+        first_name: clerkUser.firstName || '',
+        last_name: clerkUser.lastName || ''
       })
       .select()
       .single();
@@ -40,6 +54,8 @@ export async function POST() {
       console.error('Error creando usuario:', userError);
       return NextResponse.json({ error: 'Error creando usuario' }, { status: 500 });
     }
+
+    console.log('Usuario creado exitosamente:', newUser);
 
     // Crear categorías predeterminadas
     const categories = [

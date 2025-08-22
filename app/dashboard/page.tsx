@@ -12,7 +12,7 @@ import ExpenseAnalysis from '@/components/ExpenseAnalysis';
 import TransactionHistory from '@/components/TransactionHistory';
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUserInitialization();
+  const { user, isLoaded, isInitialized } = useUserInitialization();
   const { 
     transactions, 
     totalIncome, 
@@ -39,6 +39,26 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-foreground">No autorizado</div>
+      </div>
+    );
+  }
+
+  // Mostrar mensaje si el usuario no está inicializado
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-foreground mb-4">Inicializando usuario...</div>
+          <div className="text-sm text-muted-foreground">
+            Clerk ID: {user?.id}
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 
 export async function GET() {
   try {
@@ -10,7 +10,9 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Primero obtener el id interno del usuario
+    const supabase = createServerClient();
+
+    // Obtener el id interno del usuario
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("id")
@@ -18,7 +20,6 @@ export async function GET() {
       .single();
 
     if (userError || !user) {
-      console.error("Error al encontrar usuario:", userError);
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
@@ -37,13 +38,11 @@ export async function GET() {
       .order("date", { ascending: false });
 
     if (error) {
-      console.error("Error al obtener gastos:", error);
       return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
 
     return NextResponse.json({ expenses });
-  } catch (error) {
-    console.error("Error al obtener gastos:", error);
+  } catch {
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }
@@ -55,6 +54,8 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
+
+    const supabase = createServerClient();
 
     const body = await request.json();
     const { amount, description, category_id, date } = body;
@@ -75,7 +76,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !user) {
-      console.error("Error al encontrar usuario:", userError);
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
     }
 
@@ -100,13 +100,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Error al crear gasto:", error);
       return NextResponse.json({ error: "Error al crear gasto" }, { status: 500 });
     }
 
     return NextResponse.json(expense, { status: 201 });
-  } catch (error) {
-    console.error("Error al crear gasto:", error);
+  } catch {
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

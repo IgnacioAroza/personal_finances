@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 
 export function useUserInitialization() {
   const { user, isLoaded } = useUser();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -14,15 +15,21 @@ export function useUserInitialization() {
         
         if (response.status === 404) {
           // Usuario no existe, crearlo
-          await fetch('/api/users', { method: 'POST' });
+          const createResponse = await fetch('/api/users', { method: 'POST' });
+          
+          if (createResponse.ok) {
+            setIsInitialized(true);
+          }
+        } else if (response.ok) {
+          setIsInitialized(true);
         }
-      } catch (error) {
-        console.error('Error inicializando usuario:', error);
+      } catch {
+        // Error silencioso, se puede manejar con UI si es necesario
       }
     };
 
     initializeUser();
   }, [user, isLoaded]);
 
-  return { user, isLoaded };
+  return { user, isLoaded, isInitialized };
 }

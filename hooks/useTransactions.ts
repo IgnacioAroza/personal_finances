@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Income, Expense, Transaction } from '@/types/database';
+import { ensureUserExists } from '@/lib/user-utils';
 
 export const useTransactions = (isLoaded: boolean, user: unknown) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -11,6 +12,12 @@ export const useTransactions = (isLoaded: boolean, user: unknown) => {
     
     setLoading(true);
     try {
+      // Primero asegurar que el usuario existe en la BD
+      const userExists = await ensureUserExists();
+      if (!userExists) {
+        return;
+      }
+
       const [incomeRes, expenseRes] = await Promise.all([
         fetch('/api/income'),
         fetch('/api/expenses')
@@ -41,8 +48,8 @@ export const useTransactions = (isLoaded: boolean, user: unknown) => {
       ];
       
       setTransactions(allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+    } catch {
+      // Error silencioso
     } finally {
       setLoading(false);
     }
