@@ -27,7 +27,7 @@ export async function GET() {
       .from("expenses")
       .select(`
         *,
-        categories (
+        category:categories (
           id,
           name,
           icon,
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         *,
-        categories (
+        category:categories (
           id,
           name,
           icon,
