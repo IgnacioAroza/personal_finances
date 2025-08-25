@@ -1,17 +1,19 @@
 'use client';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { FloatingActionButton, BottomSheet, LoadingState } from '@/components/ui';
 import { 
   ThemeToggle, 
   FinancialSummary, 
   IncomeForm, 
   ExpenseForm, 
   ExpenseAnalysis, 
-  TransactionHistory 
+  TransactionHistory,
+  QuickTransactionForm
 } from '@/components';
 import { useUserInitialization } from '@/hooks/useUserInitialization';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
+import { useQuickActions } from '@/hooks/useQuickActions';
 
 export default function DashboardPage() {
   const { user, isLoaded, isInitialized } = useUserInitialization();
@@ -29,39 +31,31 @@ export default function DashboardPage() {
     expenseCategories
   } = useCategories(isLoaded, user);
 
+  const {
+    isBottomSheetOpen,
+    selectedTransactionType,
+    openBottomSheet,
+    closeBottomSheet,
+    selectTransactionType,
+    goBackToSelector
+  } = useQuickActions();
+
   if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-foreground">Cargando...</div>
-      </div>
-    );
+    return <LoadingState message="Cargando aplicación" />;
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-foreground">No autorizado</div>
-      </div>
-    );
+    return <LoadingState message="Error de autenticación" showRetry onRetry={() => window.location.reload()} />;
   }
 
-  // Mostrar mensaje si el usuario no está inicializado
+  // Mostrar spinner elegante si el usuario no está inicializado
   if (!isInitialized) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-foreground mb-4">Inicializando usuario...</div>
-          <div className="text-sm text-muted-foreground">
-            Clerk ID: {user?.id}
-          </div>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
+      <LoadingState 
+        message="Configurando tu cuenta" 
+        showRetry 
+        onRetry={() => window.location.reload()} 
+      />
     );
   }
 
@@ -82,33 +76,46 @@ export default function DashboardPage() {
         balance={balance}
       />
 
-      <Tabs defaultValue="register" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 h-9">
-          <TabsTrigger value="register" className="text-sm">Registrar</TabsTrigger>
-          <TabsTrigger value="analysis" className="text-sm">Análisis</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="register" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <IncomeForm 
-              categories={incomeCategories}
-              onIncomeAdded={refetchTransactions}
-            />
-            <ExpenseForm 
-              categories={expenseCategories}
-              onExpenseAdded={refetchTransactions}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analysis" className="space-y-4">
-          <ExpenseAnalysis 
-            expensesByCategory={expensesByCategory}
-            totalExpenses={totalExpenses}
+      {/* Formularios Desktop - Solo visible en pantallas grandes */}
+      <div className="hidden lg:block mb-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Registro Rápido</h2>
+        <div className="grid grid-cols-2 gap-6">
+          <IncomeForm 
+            categories={incomeCategories}
+            onIncomeAdded={refetchTransactions}
           />
-          <TransactionHistory transactions={transactions} />
-        </TabsContent>
-      </Tabs>
+          <ExpenseForm 
+            categories={expenseCategories}
+            onExpenseAdded={refetchTransactions}
+          />
+        </div>
+      </div>
+
+      {/* Análisis y Historial */}
+      <div className="space-y-4">
+        <ExpenseAnalysis 
+          expensesByCategory={expensesByCategory}
+          totalExpenses={totalExpenses}
+        />
+        <TransactionHistory transactions={transactions} />
+      </div>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onClick={openBottomSheet} />
+
+      {/* Bottom Sheet para agregar transacciones rápidamente */}
+      <BottomSheet isOpen={isBottomSheetOpen} onClose={closeBottomSheet}>
+        <QuickTransactionForm
+          selectedType={selectedTransactionType}
+          incomeCategories={incomeCategories}
+          expenseCategories={expenseCategories}
+          onSelectIncome={() => selectTransactionType('income')}
+          onSelectExpense={() => selectTransactionType('expense')}
+          onGoBack={goBackToSelector}
+          onTransactionAdded={refetchTransactions}
+          onClose={closeBottomSheet}
+        />
+      </BottomSheet>
     </div>
   );
 }

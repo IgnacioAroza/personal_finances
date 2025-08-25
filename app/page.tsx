@@ -1,29 +1,30 @@
 import { SignedIn, SignedOut } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3, TrendingUp, PieChart } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-background">
       <SignedOut>
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-white mb-6">
+            <h1 className="text-5xl font-bold text-foreground mb-6">
               Controla tus Finanzas
             </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Gestiona tus ingresos y gastos de manera inteligente. 
               Visualiza tus datos financieros y toma mejores decisiones.
             </p>
             <div className="flex gap-4 justify-center">
               <Link href="/sign-up">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                   Comenzar Gratis
                 </Button>
               </Link>
               <Link href="/sign-in">
-                <Button variant="outline" size="lg">
+                <Button variant="outline" size="lg" className="border-border text-foreground hover:bg-muted">
                   Iniciar Sesión
                 </Button>
               </Link>
@@ -31,40 +32,43 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card>
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-center text-green-400">
-                  📊 Dashboard Intuitivo
+                <CardTitle className="text-center text-foreground flex items-center justify-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Dashboard Intuitivo
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400 text-center">
+                <p className="text-muted-foreground text-center">
                   Visualiza tus finanzas con gráficos claros y tarjetas de resumen
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-center text-blue-400">
-                  💰 Registro Fácil
+                <CardTitle className="text-center text-foreground flex items-center justify-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Registro Fácil
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400 text-center">
+                <p className="text-muted-foreground text-center">
                   Añade tus ingresos y gastos de forma rápida y sencilla
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-center text-purple-400">
-                  📈 Análisis Detallado
+                <CardTitle className="text-center text-foreground flex items-center justify-center gap-2">
+                  <PieChart className="h-5 w-5 text-primary" />
+                  Análisis Detallado
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400 text-center">
+                <p className="text-muted-foreground text-center">
                   Obtén insights sobre tus patrones de gasto por categoría
                 </p>
               </CardContent>
@@ -75,14 +79,14 @@ export default function Home() {
 
       <SignedIn>
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-4xl font-bold text-white mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-8">
             ¡Bienvenido de vuelta! 👋
           </h1>
-          <p className="text-xl text-gray-300 mb-8">
+          <p className="text-xl text-muted-foreground mb-8">
             Accede a tu dashboard para gestionar tus finanzas
           </p>
           <Link href="/dashboard">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
               Ir al Dashboard
             </Button>
           </Link>
