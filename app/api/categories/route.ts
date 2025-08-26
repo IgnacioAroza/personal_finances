@@ -1,53 +1,96 @@
-import { auth } from '@clerk/nextjs/server';
-import { createServerClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
     
-    if (!userId) {
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type'); // 'income' o 'expense'
-
-    const supabase = createServerClient();
-
-    // Obtener el user_id de Supabase
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-    }
-
-    let query = supabase
+    // Obtener todas las categorías del usuario
+    const { data: categories, error: selectError } = await supabase
       .from('categories')
       .select('*')
       .eq('user_id', user.id)
       .eq('is_active', true)
+      .order('type', { ascending: true })
       .order('name', { ascending: true });
 
-    if (type) {
-      query = query.eq('type', type);
+    if (selectError) {
+      console.error('Error al obtener categorías:', selectError);
+      return NextResponse.json({ 
+        error: 'Error al obtener las categorías' 
+      }, { status: 500 });
     }
 
-    const { data: categories, error } = await query;
-
-    if (error) {
-      console.error('Error obteniendo categorías:', error);
-      return NextResponse.json({ error: 'Error obteniendo categorías' }, { status: 500 });
-    }
-
-    return NextResponse.json({ categories });
-
+    return NextResponse.json(categories || []);
   } catch (error) {
     console.error('Error en GET /api/categories:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Error interno del servidor' 
+    }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+    
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { name, type, icon, color } = body;
+
+    // Validar datos requeridos
+    if (!name || !type || !icon || !color) {
+      return NextResponse.json({ 
+        error: 'Faltan campos requeridos' 
+      }, { status: 400 });
+    }
+
+    // Validar tipo
+    if (!['income', 'expense'].includes(type)) {
+      return NextResponse.json({ 
+        error: 'Tipo de categoría inválido' 
+      }, { status: 400 });
+    }
+
+    // Crear la categoría
+    const { data: categoryData, error: insertError } = await supabase
+      .from('categories')
+      .insert({
+        user_id: user.id,
+        name,
+        type,
+        icon,
+        color,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error al crear categoría:', insertError);
+      return NextResponse.json({ 
+        error: 'Error al crear la categoría' 
+      }, { status: 500 });
+    }
+
+    return NextResponse.json(categoryData);
+  } catch (error) {
+    console.error('Error en POST /api/categories:', error);
+    return NextResponse.json({ 
+      error: 'Error interno del servidor' 
+    }, { status: 500 });
   }
 }
