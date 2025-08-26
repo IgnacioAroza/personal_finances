@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
@@ -9,30 +9,45 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'No autorizado',
+        details: authError?.message || 'Usuario no encontrado' 
+      }, { status: 401 });
     }
 
-    // Obtener todas las categorías del usuario
-    const { data: categories, error: selectError } = await supabase
+    // Obtener query parameters
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+
+    let query = supabase
       .from('categories')
       .select('*')
       .eq('user_id', user.id)
-      .eq('is_active', true)
+      .eq('is_active', true);
+
+    // Filtrar por tipo si se especifica
+    if (type && ['income', 'expense'].includes(type)) {
+      query = query.eq('type', type);
+    }
+
+    const { data: categories, error: selectError } = await query
       .order('type', { ascending: true })
       .order('name', { ascending: true });
 
     if (selectError) {
       console.error('Error al obtener categorías:', selectError);
       return NextResponse.json({ 
-        error: 'Error al obtener las categorías' 
+        error: 'Error al obtener las categorías',
+        details: selectError.message 
       }, { status: 500 });
     }
 
-    return NextResponse.json(categories || []);
+    return NextResponse.json({ categories: categories || [] });
   } catch (error) {
     console.error('Error en GET /api/categories:', error);
     return NextResponse.json({ 
-      error: 'Error interno del servidor' 
+      error: 'Error interno del servidor',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
