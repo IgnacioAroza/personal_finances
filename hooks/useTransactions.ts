@@ -27,22 +27,22 @@ export const useTransactions = (isLoaded: boolean, user: unknown) => {
       const expenseData = await expenseRes.json();
       
       const allTransactions: Transaction[] = [
-        ...(incomeData.incomes || []).map((income: Income) => ({
+        ...(incomeData || []).map((income: Income) => ({
           id: income.id,
           type: 'income' as const,
           amount: income.amount,
           description: income.description,
           date: income.date,
-          category: income.category || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
+          category: income.categories || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
           notes: income.notes,
         })),
-        ...(expenseData.expenses || []).map((expense: Expense) => ({
+        ...(expenseData || []).map((expense: Expense) => ({
           id: expense.id,
           type: 'expense' as const,
           amount: expense.amount,
           description: expense.description,
           date: expense.date,
-          category: expense.category || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
+          category: expense.categories || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
           notes: expense.notes,
         }))
       ];
