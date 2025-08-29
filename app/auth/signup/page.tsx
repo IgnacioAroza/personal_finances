@@ -7,6 +7,7 @@ import { Input, Label } from '@/components/ui/form'
 import { LoadingSpinner } from '@/components/ui/loading'
 import { FcGoogle } from 'react-icons/fc'
 import Link from 'next/link'
+import { getCallbackUrl } from '@/lib/utils/url'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -39,7 +40,7 @@ export default function SignUpPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getCallbackUrl(),
       },
     })
 
@@ -56,7 +57,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: getCallbackUrl()
       }
     })
     if (error) {

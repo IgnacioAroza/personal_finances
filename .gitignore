@@ -2,6 +2,7 @@
 
 .copilot-instructions.md
 /.vscode
+DEPLOYMENT_SETUP.md
 
 # dependencies
 /node_modules

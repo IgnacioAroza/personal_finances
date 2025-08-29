@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/ui/loading'
 import { FcGoogle } from 'react-icons/fc'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { getCallbackUrl } from '@/lib/utils/url'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -41,7 +42,7 @@ export default function SignInPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: getCallbackUrl()
       }
     })
     if (error) {
