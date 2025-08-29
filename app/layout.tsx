@@ -1,14 +1,7 @@
 import { type Metadata } from 'next'
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
+import { UserNav } from '@/components/user-nav'
 import './globals.css'
 
 const geistSans = Geist({
@@ -32,54 +25,27 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      signInFallbackRedirectUrl="/dashboard"
-      signUpFallbackRedirectUrl="/dashboard"
-    >
-      <html lang="es" suppressHydrationWarning>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <header className="border-b border-border bg-card">
-              <div className="container mx-auto flex justify-between items-center p-4 h-16">
-                <h1 className="text-xl font-bold text-foreground">💰 Finanzas</h1>
-                <div className="flex items-center gap-4">
-                  <SignedOut>
-                    <SignInButton>
-                      <button className="text-muted-foreground hover:text-foreground">
-                        Iniciar Sesión
-                      </button>
-                    </SignInButton>
-                    <SignUpButton>
-                      <button className="bg-primary text-primary-foreground rounded-lg font-medium text-sm h-10 px-5 hover:bg-primary/90 transition-colors">
-                        Registrarse
-                      </button>
-                    </SignUpButton>
-                  </SignedOut>
-                  <SignedIn>
-                    <UserButton 
-                      appearance={{
-                        elements: {
-                          avatarBox: "w-8 h-8"
-                        }
-                      }}
-                    />
-                  </SignedIn>
-                </div>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <header className="border-b border-border bg-card">
+            <div className="container mx-auto flex justify-between items-center p-4 h-16">
+              <h1 className="text-xl font-bold text-foreground">💰 Finanzas</h1>
+              <div className="flex items-center gap-4">
+                <UserNav />
               </div>
-            </header>
-            <main className="container mx-auto p-4">
-              {children}
-            </main>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+            </div>
+          </header>
+          <main className="container mx-auto p-4">
+            {children}
+          </main>
+        </ThemeProvider>
+      </body>
+    </html>
   )
 }

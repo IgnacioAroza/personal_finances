@@ -1,43 +1,67 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 /**
- * Obtiene el ID interno del usuario desde la tabla users usando el clerk_user_id
- * @param clerkUserId - El ID del usuario de Clerk
- * @returns El ID interno del usuario o null si no se encuentra
+ * Obtiene el usuario actual autenticado
+ * @returns El usuario de Supabase Auth o null si no está autenticado
  */
-export async function getUserInternalId(clerkUserId: string) {
+export async function getCurrentUser() {
+  const supabase = createClient();
+  
   try {
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("id")
-      .eq("clerk_user_id", clerkUserId)
-      .single();
-
-    if (error || !user) {
-      console.error("Error al encontrar usuario:", error);
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error("Error al obtener usuario actual:", error);
       return null;
     }
 
-    return user.id;
+    return user;
   } catch (error) {
-    console.error("Error al obtener ID interno del usuario:", error);
+    console.error("Error al obtener usuario actual:", error);
     return null;
   }
 }
 
 /**
- * Verifica que un usuario existe y retorna su ID interno
- * @param clerkUserId - El ID del usuario de Clerk
- * @returns El ID interno del usuario o lanza un error
+ * Verifica que un usuario existe en nuestra tabla users
+ * @param userId - El ID del usuario de Supabase Auth
+ * @returns Los datos del usuario o null si no se encuentra
  */
-export async function requireUserInternalId(clerkUserId: string) {
-  const userId = await getUserInternalId(clerkUserId);
+export async function getUserFromDatabase(userId: string) {
+  const supabase = createClient();
   
-  if (!userId) {
-    throw new Error("Usuario no encontrado");
+  try {
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Error al encontrar usuario en BD:", error);
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error("Error al obtener usuario de BD:", error);
+    return null;
+  }
+}
+
+/**
+ * Verifica que un usuario existe y retorna sus datos
+ * @param userId - El ID del usuario de Supabase Auth
+ * @returns Los datos del usuario o lanza un error
+ */
+export async function requireUser(userId: string) {
+  const user = await getUserFromDatabase(userId);
+  
+  if (!user) {
+    throw new Error("Usuario no encontrado en la base de datos");
   }
 
-  return userId;
+  return user;
 }
 
 /**
@@ -46,31 +70,42 @@ export async function requireUserInternalId(clerkUserId: string) {
  * @returns Promise<boolean> - true si el usuario existe o fue creado exitosamente
  */
 export async function ensureUserExists(): Promise<boolean> {
+  const supabase = createClient();
+  
   try {
-    // Verificar si el usuario existe
-    const response = await fetch('/api/users');
+    const { data: { user }, error } = await supabase.auth.getUser();
     
-    if (response.status === 404) {
-      console.log('Usuario no encontrado, creando...');
-      // Usuario no existe, crearlo
-      const createResponse = await fetch('/api/users', { method: 'POST' });
-      
-      if (createResponse.ok) {
-        console.log('Usuario creado exitosamente');
-        return true;
-      } else {
-        console.error('Error creando usuario:', await createResponse.text());
-        return false;
-      }
-    } else if (response.ok) {
-      // Usuario ya existe
-      return true;
-    } else {
-      console.error('Error verificando usuario:', await response.text());
+    if (error || !user) {
+      console.error("Usuario no autenticado:", error);
       return false;
     }
+
+    // Verificar si el usuario existe en nuestra tabla
+    const existingUser = await getUserFromDatabase(user.id);
+    
+    if (existingUser) {
+      return true;
+    }
+
+    // Si no existe, crearlo (aunque debería haberse creado automáticamente)
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: user.id,
+        email: user.email || '',
+        first_name: user.user_metadata?.first_name || '',
+        last_name: user.user_metadata?.last_name || '',
+        avatar_url: user.user_metadata?.avatar_url || '',
+      });
+
+    if (insertError) {
+      console.error("Error al crear usuario:", insertError);
+      return false;
+    }
+
+    return true;
   } catch (error) {
-    console.error('Error en ensureUserExists:', error);
+    console.error("Error al asegurar que el usuario existe:", error);
     return false;
   }
 }

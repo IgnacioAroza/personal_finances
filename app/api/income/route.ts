@@ -1,12 +1,14 @@
-import { auth } from '@clerk/nextjs/server';
-import { createServerClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
     
-    if (!userId) {
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -20,21 +22,8 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const supabase = createServerClient();
-
-    // Obtener el user_id de Supabase
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-    }
-
-    // Crear el ingreso
-    const { data: income, error } = await supabase
+    // Crear el registro de ingreso directamente con el user.id
+    const { data: incomeData, error: insertError } = await supabase
       .from('income')
       .insert({
         user_id: user.id,
@@ -42,23 +31,21 @@ export async function POST(request: Request) {
         description,
         date,
         category_id,
-        notes: notes || null,
+        notes: notes || null
       })
       .select()
       .single();
 
-    if (error) {
+    if (insertError) {
+      console.error('Error al crear ingreso:', insertError);
       return NextResponse.json({ 
         error: 'Error al crear el ingreso' 
       }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      message: 'Ingreso creado exitosamente', 
-      income 
-    });
-
-  } catch {
+    return NextResponse.json(incomeData);
+  } catch (error) {
+    console.error('Error en POST /api/income:', error);
     return NextResponse.json({ 
       error: 'Error interno del servidor' 
     }, { status: 500 });
@@ -67,44 +54,40 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
     
-    if (!userId) {
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const supabase = createServerClient();
-
-    // Obtener el user_id de Supabase
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
-    }
-
-    // Obtener ingresos del usuario
-    const { data: incomes, error } = await supabase
+    // Obtener todos los ingresos del usuario con información de categoría
+    const { data: income, error: selectError } = await supabase
       .from('income')
       .select(`
         *,
-        category:categories(*)
+        categories (
+          id,
+          name,
+          icon,
+          color
+        )
       `)
       .eq('user_id', user.id)
       .order('date', { ascending: false });
 
-    if (error) {
+    if (selectError) {
+      console.error('Error al obtener ingresos:', selectError);
       return NextResponse.json({ 
-        error: 'Error al obtener ingresos' 
+        error: 'Error al obtener los ingresos' 
       }, { status: 500 });
     }
 
-    return NextResponse.json({ incomes });
-
-  } catch {
+    return NextResponse.json(income || []);
+  } catch (error) {
+    console.error('Error en GET /api/income:', error);
     return NextResponse.json({ 
       error: 'Error interno del servidor' 
     }, { status: 500 });

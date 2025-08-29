@@ -6,3 +6,5 @@ export * from './tabs';
 export * from './floating-action-button';
 export * from './bottom-sheet';
 export * from './loading';
+export * from './avatar';
+export * from './dropdown-menu';

@@ -7,13 +7,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
+// Cliente básico para operaciones legacy (se recomienda usar /lib/supabase/client.ts y /lib/supabase/server.ts)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // Clerk maneja la autenticación
+    persistSession: true, // Supabase maneja la autenticación
   },
 });
 
-// Cliente para operaciones del servidor
+// Cliente para operaciones del servidor con Service Role Key
 export const createServerClient = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   
