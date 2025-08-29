@@ -1,121 +1,135 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { createServerClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { defaultCategories } from '@/lib/utils';
 
-export async function POST() {
+export async function GET() {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
     
-    if (!userId) {
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Obtener información completa del usuario de Clerk
-    const clerkUser = await currentUser();
-    
-    if (!clerkUser) {
-      return NextResponse.json({ error: 'No se pudo obtener información del usuario' }, { status: 400 });
+    // Obtener datos del usuario desde nuestra tabla
+    const { data: userData, error: selectError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (selectError) {
+      if (selectError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+      }
+      console.error('Error al obtener usuario:', selectError);
+      return NextResponse.json({ 
+        error: 'Error al obtener los datos del usuario' 
+      }, { status: 500 });
     }
 
-    const supabase = createServerClient();
+    return NextResponse.json(userData);
+  } catch (error) {
+    console.error('Error en GET /api/users:', error);
+    return NextResponse.json({ 
+      error: 'Error interno del servidor' 
+    }, { status: 500 });
+  }
+}
+
+export async function POST() {
+  try {
+    const supabase = await createClient();
+    
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
 
     // Verificar si el usuario ya existe
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('id', user.id)
       .single();
 
     if (existingUser) {
-      return NextResponse.json({ message: 'Usuario ya existe', user: existingUser });
+      return NextResponse.json({ 
+        message: 'Usuario ya existe',
+        user: existingUser 
+      });
     }
 
-    console.log('Creando nuevo usuario con datos de Clerk:', {
-      id: clerkUser.id,
-      email: clerkUser.primaryEmailAddress?.emailAddress,
-      firstName: clerkUser.firstName,
-      lastName: clerkUser.lastName
-    });
-
-    // Crear nuevo usuario con datos reales de Clerk
-    const { data: newUser, error: userError } = await supabase
+    // Crear el usuario en nuestra tabla
+    const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({
-        clerk_user_id: userId,
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        first_name: clerkUser.firstName || '',
-        last_name: clerkUser.lastName || ''
+        id: user.id,
+        email: user.email || '',
+        first_name: user.user_metadata?.first_name || '',
+        last_name: user.user_metadata?.last_name || '',
+        avatar_url: user.user_metadata?.avatar_url || '',
       })
       .select()
       .single();
 
-    if (userError) {
-      console.error('Error creando usuario:', userError);
-      return NextResponse.json({ error: 'Error creando usuario' }, { status: 500 });
+    if (insertError) {
+      console.error('Error al crear usuario:', insertError);
+      return NextResponse.json({ 
+        error: 'Error al crear el usuario' 
+      }, { status: 500 });
     }
 
-    console.log('Usuario creado exitosamente:', newUser);
-
-    // Crear categorías predeterminadas
-    const categories = [
-      ...defaultCategories.income.map(cat => ({
-        ...cat,
-        type: 'income' as const,
-        user_id: newUser.id
-      })),
-      ...defaultCategories.expense.map(cat => ({
-        ...cat,
-        type: 'expense' as const,
-        user_id: newUser.id
-      }))
-    ];
-
-    const { error: categoriesError } = await supabase
-      .from('categories')
-      .insert(categories);
-
-    if (categoriesError) {
-      console.error('Error creando categorías:', categoriesError);
-      // No retornar error aquí, el usuario se creó correctamente
-    }
-
-    return NextResponse.json({ 
-      message: 'Usuario creado exitosamente', 
-      user: newUser 
-    });
-
+    return NextResponse.json(newUser);
   } catch (error) {
     console.error('Error en POST /api/users:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Error interno del servidor' 
+    }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function PATCH(request: Request) {
   try {
-    const { userId } = await auth();
+    const supabase = await createClient();
     
-    if (!userId) {
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const supabase = createServerClient();
+    const body = await request.json();
+    const { first_name, last_name } = body;
 
-    const { data: user, error } = await supabase
+    // Actualizar datos del usuario
+    const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .select('*')
-      .eq('clerk_user_id', userId)
+      .update({
+        first_name,
+        last_name,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select()
       .single();
 
-    if (error) {
-      console.error('Error obteniendo usuario:', error);
-      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    if (updateError) {
+      console.error('Error al actualizar usuario:', updateError);
+      return NextResponse.json({ 
+        error: 'Error al actualizar el usuario' 
+      }, { status: 500 });
     }
 
-    return NextResponse.json({ user });
-
+    return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error en GET /api/users:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    console.error('Error en PATCH /api/users:', error);
+    return NextResponse.json({ 
+      error: 'Error interno del servidor' 
+    }, { status: 500 });
   }
 }

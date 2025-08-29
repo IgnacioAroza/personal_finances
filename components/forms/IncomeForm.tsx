@@ -13,10 +13,10 @@ import {
 } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, TrendingUp } from 'lucide-react';
-import type { Category } from '@/types/database';
+import type { Categories } from '@/types/database';
 
 interface IncomeFormProps {
-  categories: Category[];
+  categories: Categories[];
   onIncomeAdded: () => void;
 }
 

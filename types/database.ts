@@ -1,14 +1,14 @@
 export interface User {
   id: string;
-  clerk_user_id: string;
   email: string;
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface Category {
+export interface Categories {
   id: string;
   name: string;
   type: 'income' | 'expense';
@@ -29,7 +29,7 @@ export interface Income {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  category?: Category;
+  categories?: Categories;
 }
 
 export interface Expense {
@@ -42,7 +42,7 @@ export interface Expense {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  category?: Category;
+  categories?: Categories;
 }
 
 export interface Transaction {
@@ -51,7 +51,7 @@ export interface Transaction {
   amount: number;
   description: string;
   date: string;
-  category: Category;
+  category: Categories;
   notes: string | null;
 }
 

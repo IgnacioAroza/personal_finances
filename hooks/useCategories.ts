@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Category } from '@/types/database';
-import { ensureUserExists } from '@/lib/user-utils';
+import { createClient } from '@/lib/supabase/client';
 
 export const useCategories = (isLoaded: boolean, user: unknown) => {
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
@@ -13,24 +13,45 @@ export const useCategories = (isLoaded: boolean, user: unknown) => {
       
       setLoading(true);
       try {
-        // Primero asegurar que el usuario existe en la BD
-        const userExists = await ensureUserExists();
-        if (!userExists) {
+        const supabase = createClient();
+        
+        // Verificar que tenemos un usuario autenticado
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !currentUser) {
           return;
         }
 
-        const [incomeRes, expenseRes] = await Promise.all([
-          fetch('/api/categories?type=income'),
-          fetch('/api/categories?type=expense')
-        ]);
+        // Obtener categorías de ingresos
+        const { data: incomeData, error: incomeError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'income')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        // Obtener categorías de gastos
+        const { data: expenseData, error: expenseError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'expense')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (incomeError) {
+          console.error('Error al obtener categorías de ingresos:', incomeError);
+        }
         
-        const incomeData = await incomeRes.json();
-        const expenseData = await expenseRes.json();
+        if (expenseError) {
+          console.error('Error al obtener categorías de gastos:', expenseError);
+        }
         
-        setIncomeCategories(incomeData.categories || []);
-        setExpenseCategories(expenseData.categories || []);
-      } catch {
-        // Error silencioso
+        setIncomeCategories(incomeData || []);
+        setExpenseCategories(expenseData || []);
+      } catch (error) {
+        console.error('Error al cargar categorías:', error);
       } finally {
         setLoading(false);
       }
