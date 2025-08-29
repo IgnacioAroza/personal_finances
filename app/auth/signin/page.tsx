@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/form'
 import { LoadingSpinner } from '@/components/ui/loading'
+import { FcGoogle } from 'react-icons/fc'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -39,20 +40,6 @@ export default function SignInPage() {
     setLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    }
-  }
-
-  const handleGitHubSignIn = async () => {
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`
       }
@@ -133,19 +120,12 @@ export default function SignInPage() {
                 onClick={handleGoogleSignIn}
                 disabled={loading}
               >
-                {loading ? <LoadingSpinner size="sm" className="mr-2" /> : null}
+                {loading ? (
+                  <LoadingSpinner size="sm" className="mr-2" />
+                ) : (
+                  <FcGoogle className="mr-2 h-4 w-4" />
+                )}
                 Continuar con Google
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleGitHubSignIn}
-                disabled={loading}
-              >
-                {loading ? <LoadingSpinner size="sm" className="mr-2" /> : null}
-                Continuar con GitHub
               </Button>
             </div>
           </div>
