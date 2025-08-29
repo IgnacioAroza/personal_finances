@@ -19,6 +19,9 @@ export interface Categories {
   created_at: string;
 }
 
+// Alias para compatibilidad
+export type Category = Categories;
+
 export interface Income {
   id: string;
   user_id: string;
