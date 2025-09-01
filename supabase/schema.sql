@@ -29,7 +29,7 @@ CREATE TABLE income (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
-    description TEXT NOT NULL,
+    description TEXT,
     date DATE NOT NULL,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     notes TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE expenses (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
-    description TEXT NOT NULL,
+    description TEXT,
     date DATE NOT NULL,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     notes TEXT,
@@ -78,6 +78,27 @@ CREATE TRIGGER update_income_updated_at BEFORE UPDATE ON income
 
 CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Triggers para forzar descripcion vacía cuando venga NULL
+CREATE OR REPLACE FUNCTION public.set_empty_description()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.description IS NULL THEN
+        NEW.description := '';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS income_set_empty_description ON public.income;
+CREATE TRIGGER income_set_empty_description
+  BEFORE INSERT OR UPDATE ON public.income
+  FOR EACH ROW EXECUTE FUNCTION public.set_empty_description();
+
+DROP TRIGGER IF EXISTS expenses_set_empty_description ON public.expenses;
+CREATE TRIGGER expenses_set_empty_description
+  BEFORE INSERT OR UPDATE ON public.expenses
+  FOR EACH ROW EXECUTE FUNCTION public.set_empty_description();
 
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

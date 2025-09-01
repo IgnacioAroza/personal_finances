@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const { amount, description, date, category_id, notes } = body;
 
     // Validar datos requeridos
-    if (!amount || !description || !date || !category_id) {
+    if (!amount || !date || !category_id) {
       return NextResponse.json({ 
         error: 'Faltan campos requeridos' 
       }, { status: 400 });
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         amount: parseFloat(amount),
-        description,
+        description: description ?? null,
         date,
         category_id,
         notes: notes || null
