@@ -16,7 +16,7 @@ export default function Home() {
             Visualiza tus datos financieros y toma mejores decisiones.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link href="/auth/signup">
+            <Link href="/dashboard">
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Comenzar Gratis
               </Button>
