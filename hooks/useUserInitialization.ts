@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { deriveNamesFromMetadata } from '@/lib/user-utils';
 
 export function useUserInitialization() {
   const [user, setUser] = useState<User | null>(null);
@@ -36,16 +37,16 @@ export function useUserInitialization() {
           .single();
 
         if (userError && userError.code === 'PGRST116') {
-          // Usuario no existe en nuestra tabla, pero debería haberse creado automáticamente
-          // Esto puede pasar si el trigger falló, así que lo creamos manualmente
+          // Usuario no existe en nuestra tabla, lo creamos con nombres derivados de metadata
+          const derived = deriveNamesFromMetadata(authUser.user_metadata);
           const { error: insertError } = await supabase
             .from('users')
             .insert({
               id: authUser.id,
               email: authUser.email || '',
-              first_name: authUser.user_metadata?.first_name || '',
-              last_name: authUser.user_metadata?.last_name || '',
-              avatar_url: authUser.user_metadata?.avatar_url || '',
+              first_name: derived.first_name || '',
+              last_name: derived.last_name || '',
+              avatar_url: derived.avatar_url || '',
             });
 
           if (insertError) {
@@ -54,6 +55,36 @@ export function useUserInitialization() {
             setIsInitialized(true);
           }
         } else if (userData) {
+          // El usuario existe; si faltan nombres/imagen, completar desde metadata
+          const { data: fullUserRow } = await supabase
+            .from('users')
+            .select('first_name, last_name, avatar_url')
+            .eq('id', authUser.id)
+            .single();
+
+          const derived = deriveNamesFromMetadata(authUser.user_metadata);
+          const updates: Record<string, string> = {};
+
+          if ((!fullUserRow?.first_name || fullUserRow.first_name.trim() === '') && derived.first_name) {
+            updates.first_name = derived.first_name;
+          }
+          if ((!fullUserRow?.last_name || fullUserRow.last_name.trim() === '') && derived.last_name) {
+            updates.last_name = derived.last_name;
+          }
+          if ((!fullUserRow?.avatar_url || fullUserRow.avatar_url.trim() === '') && derived.avatar_url) {
+            updates.avatar_url = derived.avatar_url;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await supabase
+              .from('users')
+              .update({
+                ...updates,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', authUser.id);
+          }
+
           setIsInitialized(true);
         }
       } catch (error) {

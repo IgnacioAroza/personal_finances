@@ -76,7 +76,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 3. Ejecuta el schema SQL en el SQL Editor:
 
 ```sql
--- Ejecutar el contenido del archivo schema.sql
+-- Ejecutar el contenido del archivo supabase/schema.sql
 ```
 
 ### 6. Configurar autenticación Clerk-Supabase
