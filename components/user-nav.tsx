@@ -121,7 +121,8 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        {/* HABILITAR CUANDO HAYA CREADO LAS PAGINAS */}
+        {/* <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Perfil</span>
@@ -130,7 +131,7 @@ export function UserNav() {
           <Settings className="mr-2 h-4 w-4" />
           <span>Configuración</span>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator /> */}
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Cerrar Sesión</span>
