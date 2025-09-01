@@ -97,7 +97,12 @@ export default function DashboardPage() {
           expensesByCategory={expensesByCategory}
           totalExpenses={totalExpenses}
         />
-        <TransactionHistory transactions={transactions} />
+        <TransactionHistory 
+          transactions={transactions} 
+          incomeCategories={incomeCategories}
+          expenseCategories={expenseCategories}
+          onChanged={refetchTransactions}
+        />
       </div>
 
       {/* Floating Action Button */}

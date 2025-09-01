@@ -37,7 +37,7 @@ export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormP
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.amount || !form.description || !form.category_id) {
+    if (!form.amount || !form.category_id) {
       return;
     }
 

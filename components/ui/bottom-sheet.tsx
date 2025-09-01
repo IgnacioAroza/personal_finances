@@ -8,9 +8,10 @@ interface BottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  title?: string;
 }
 
-export function BottomSheet({ isOpen, onClose, children }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, children, title = 'Nueva Transacción' }: BottomSheetProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -49,7 +50,7 @@ export function BottomSheet({ isOpen, onClose, children }: BottomSheetProps) {
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 pb-4">
-          <h2 className="text-lg font-semibold text-foreground">Nueva Transacción</h2>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-muted rounded-full transition-colors"
