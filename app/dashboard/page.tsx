@@ -28,7 +28,8 @@ export default function DashboardPage() {
   
   const { 
     incomeCategories, 
-    expenseCategories
+    expenseCategories,
+    refresh: refreshCategories
   } = useCategories(isLoaded, user);
 
   const {
@@ -83,10 +84,12 @@ export default function DashboardPage() {
           <IncomeForm 
             categories={incomeCategories}
             onIncomeAdded={refetchTransactions}
+            onCategoriesRefresh={refreshCategories}
           />
           <ExpenseForm 
             categories={expenseCategories}
             onExpenseAdded={refetchTransactions}
+            onCategoriesRefresh={refreshCategories}
           />
         </div>
       </div>
@@ -118,6 +121,7 @@ export default function DashboardPage() {
           onSelectExpense={() => selectTransactionType('expense')}
           onGoBack={goBackToSelector}
           onTransactionAdded={refetchTransactions}
+          onCategoriesRefresh={refreshCategories}
           onClose={closeBottomSheet}
         />
       </BottomSheet>

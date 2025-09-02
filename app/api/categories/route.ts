@@ -73,6 +73,20 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Limpiar y validar el nombre
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      return NextResponse.json({ 
+        error: 'El nombre no puede estar vacío' 
+      }, { status: 400 });
+    }
+
+    if (trimmedName.length > 50) {
+      return NextResponse.json({ 
+        error: 'El nombre no puede exceder 50 caracteres' 
+      }, { status: 400 });
+    }
+
     // Validar tipo
     if (!['income', 'expense'].includes(type)) {
       return NextResponse.json({ 
@@ -80,12 +94,35 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Verificar si ya existe una categoría con el mismo nombre y tipo para este usuario
+    const { data: existingCategory, error: checkError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('name', trimmedName)
+      .eq('type', type)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error al verificar categoría existente:', checkError);
+      return NextResponse.json({ 
+        error: 'Error al verificar la categoría' 
+      }, { status: 500 });
+    }
+
+    if (existingCategory) {
+      return NextResponse.json({ 
+        error: 'Ya existe una categoría con este nombre para este tipo' 
+      }, { status: 409 });
+    }
+
     // Crear la categoría
     const { data: categoryData, error: insertError } = await supabase
       .from('categories')
       .insert({
         user_id: user.id,
-        name,
+        name: trimmedName,
         type,
         icon,
         color,
@@ -96,12 +133,21 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Error al crear categoría:', insertError);
+      
+      // Manejar errores específicos de duplicados a nivel de BD
+      if (insertError.code === '23505') {
+        return NextResponse.json({ 
+          error: 'Ya existe una categoría con este nombre' 
+        }, { status: 409 });
+      }
+      
       return NextResponse.json({ 
-        error: 'Error al crear la categoría' 
+        error: 'Error al crear la categoría',
+        details: insertError.message
       }, { status: 500 });
     }
 
-    return NextResponse.json(categoryData);
+    return NextResponse.json({ category: categoryData });
   } catch (error) {
     console.error('Error en POST /api/categories:', error);
     return NextResponse.json({ 
