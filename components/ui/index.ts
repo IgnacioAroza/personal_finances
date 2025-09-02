@@ -2,6 +2,7 @@ export * from './avatar';
 export * from './button';
 export * from './bottom-sheet';
 export * from './card';
+export * from './checkbox';
 export * from './confirm-dialog';
 export * from './dropdown-menu';
 export * from './floating-action-button';

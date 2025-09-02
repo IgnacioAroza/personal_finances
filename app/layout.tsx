@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { UserNav } from '@/components/user-nav'
 import './globals.css'
 import { Toaster } from 'sonner'
+import Link from 'next/link'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -36,7 +37,9 @@ export default function RootLayout({
         >
           <header className="border-b border-border bg-card">
             <div className="container mx-auto flex justify-between items-center p-4 h-16">
-              <h1 className="text-xl font-bold text-foreground">💰 Finanzas</h1>
+              <Link href="/dashboard" className="text-xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer">
+                💰 Finanzas
+              </Link>
               <div className="flex items-center gap-4">
                 <UserNav />
               </div>
