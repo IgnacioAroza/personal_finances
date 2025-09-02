@@ -12,12 +12,15 @@ import {
   Label
 } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, TrendingDown } from 'lucide-react';
+import { PlusCircle, TrendingDown, Plus } from 'lucide-react';
+import CategoryModal from '@/components/categories/CategoryModal';
+import { toast } from 'sonner';
 import type { Category } from '@/types/database';
 
 interface ExpenseFormProps {
   categories: Category[];
   onExpenseAdded: () => void;
+  onCategoriesRefresh: () => void;
 }
 
 interface ExpenseFormData {
@@ -27,7 +30,7 @@ interface ExpenseFormData {
   category_id: string;
 }
 
-export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormProps) {
+export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRefresh }: ExpenseFormProps) {
   const [form, setForm] = useState<ExpenseFormData>({
     amount: "",
     description: "",
@@ -35,9 +38,11 @@ export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormP
     category_id: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.amount || !form.category_id) {
+      toast.error('Por favor completa el monto y selecciona una categoría');
       return;
     }
 
@@ -61,13 +66,32 @@ export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormP
           date: new Date().toISOString().split("T")[0],
           category_id: "",
         });
+        toast.success('Gasto agregado exitosamente');
         onExpenseAdded();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Error al crear el gasto');
       }
-    } catch {
-      // Error silencioso
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      toast.error('Error al crear el gasto');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCategoryCreated = (newCategory: Category) => {
+    // Validar que la categoría tenga ID
+    if (!newCategory || !newCategory.id) {
+      console.error('Categoría inválida recibida:', newCategory);
+      toast.error('Error: Categoría creada sin ID válido');
+      return;
+    }
+    
+    // Setear la nueva categoría como seleccionada
+    setForm(prev => ({ ...prev, category_id: newCategory.id }));
+    // Refrescar la lista de categorías
+    onCategoriesRefresh();
   };
 
   const updateForm = (field: keyof ExpenseFormData, value: string) => {
@@ -75,66 +99,87 @@ export default function ExpenseForm({ categories, onExpenseAdded }: ExpenseFormP
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingDown className="h-5 w-5 text-red-600" />
-          Registrar Gasto
-        </CardTitle>
-        <CardDescription>Añade un nuevo gasto a tu registro</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="expense-amount">Monto</Label>
-          <Input
-            id="expense-amount"
-            type="number"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={(e) => updateForm('amount', e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expense-description">Descripción</Label>
-          <Input
-            id="expense-description"
-            placeholder="Descripción del gasto"
-            value={form.description}
-            onChange={(e) => updateForm('description', e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expense-category">Categoría</Label>
-          <Select
-            value={form.category_id}
-            onValueChange={(value) => updateForm('category_id', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona una categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.icon} {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expense-date">Fecha</Label>
-          <Input
-            id="expense-date"
-            type="date"
-            value={form.date}
-            onChange={(e) => updateForm('date', e.target.value)}
-          />
-        </div>
-        <Button onClick={handleSubmit} className="w-full" disabled={loading}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          {loading ? 'Añadiendo...' : 'Añadir Gasto'}
-        </Button>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 text-red-600" />
+            Registrar Gasto
+          </CardTitle>
+          <CardDescription>Añade un nuevo gasto a tu registro</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="expense-amount">Monto</Label>
+            <Input
+              id="expense-amount"
+              type="number"
+              placeholder="0.00"
+              value={form.amount}
+              onChange={(e) => updateForm('amount', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="expense-description">Descripción</Label>
+            <Input
+              id="expense-description"
+              placeholder="Descripción del gasto"
+              value={form.description}
+              onChange={(e) => updateForm('description', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="expense-category">Categoría</Label>
+            <div className="flex gap-2">
+              <Select
+                value={form.category_id}
+                onValueChange={(value) => updateForm('category_id', value)}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.icon} {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setShowCategoryModal(true)}
+                title="Nueva categoría"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="expense-date">Fecha</Label>
+            <Input
+              id="expense-date"
+              type="date"
+              value={form.date}
+              onChange={(e) => updateForm('date', e.target.value)}
+            />
+          </div>
+          <Button onClick={handleSubmit} className="w-full" disabled={loading}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            {loading ? 'Añadiendo...' : 'Añadir Gasto'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Modal de nueva categoría */}
+      <CategoryModal
+        isOpen={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        onSuccess={handleCategoryCreated}
+        defaultType="expense"
+      />
+    </>
   );
 }

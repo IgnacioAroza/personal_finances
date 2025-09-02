@@ -14,6 +14,7 @@ interface QuickTransactionFormProps {
   onSelectExpense: () => void;
   onGoBack: () => void;
   onTransactionAdded: () => void;
+  onCategoriesRefresh: () => void;
   onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ export function QuickTransactionForm({
   onSelectExpense,
   onGoBack,
   onTransactionAdded,
+  onCategoriesRefresh,
   onClose
 }: QuickTransactionFormProps) {
 
@@ -63,11 +65,13 @@ export function QuickTransactionForm({
         <IncomeForm
           categories={incomeCategories}
           onIncomeAdded={handleTransactionAdded}
+          onCategoriesRefresh={onCategoriesRefresh}
         />
       ) : (
         <ExpenseForm
           categories={expenseCategories}
           onExpenseAdded={handleTransactionAdded}
+          onCategoriesRefresh={onCategoriesRefresh}
         />
       )}
     </div>
