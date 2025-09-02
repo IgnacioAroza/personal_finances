@@ -65,7 +65,7 @@ export async function PATCH(
     // Validar que la categoría pertenece al usuario
     const { data: existingCategory } = await supabase
       .from('categories')
-      .select('id')
+      .select('id, name, type')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
@@ -85,7 +85,22 @@ export async function PATCH(
       is_active?: boolean;
     } = {};
     
-    if (name !== undefined) updateFields.name = name;
+    // Validar nombre si se está actualizando
+    if (name !== undefined) {
+      const trimmedName = name.trim();
+      if (trimmedName.length === 0) {
+        return NextResponse.json({ 
+          error: 'El nombre no puede estar vacío' 
+        }, { status: 400 });
+      }
+      if (trimmedName.length > 50) {
+        return NextResponse.json({ 
+          error: 'El nombre no puede exceder 50 caracteres' 
+        }, { status: 400 });
+      }
+      updateFields.name = trimmedName;
+    }
+    
     if (type !== undefined) {
       if (!['income', 'expense'].includes(type)) {
         return NextResponse.json({ 
@@ -98,6 +113,28 @@ export async function PATCH(
     if (color !== undefined) updateFields.color = color;
     if (is_active !== undefined) updateFields.is_active = is_active;
 
+    // Verificar duplicados si se está cambiando nombre o tipo
+    if (updateFields.name || updateFields.type) {
+      const nameToCheck = updateFields.name || existingCategory.name;
+      const typeToCheck = updateFields.type || existingCategory.type;
+      
+      const { data: duplicateCategory } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', nameToCheck)
+        .eq('type', typeToCheck)
+        .eq('is_active', true)
+        .neq('id', id) // Excluir la categoría actual
+        .maybeSingle();
+
+      if (duplicateCategory) {
+        return NextResponse.json({ 
+          error: 'Ya existe una categoría con este nombre para este tipo' 
+        }, { status: 409 });
+      }
+    }
+
     // Actualizar la categoría
     const { data: updatedCategory, error: updateError } = await supabase
       .from('categories')
@@ -109,8 +146,17 @@ export async function PATCH(
 
     if (updateError) {
       console.error('Error al actualizar categoría:', updateError);
+      
+      // Manejar errores específicos de duplicados a nivel de BD
+      if (updateError.code === '23505') {
+        return NextResponse.json({ 
+          error: 'Ya existe una categoría con este nombre' 
+        }, { status: 409 });
+      }
+      
       return NextResponse.json({ 
-        error: 'Error al actualizar la categoría' 
+        error: 'Error al actualizar la categoría',
+        details: updateError.message
       }, { status: 500 });
     }
 
@@ -142,7 +188,7 @@ export async function DELETE(
     // Verificar que la categoría pertenece al usuario
     const { data: existingCategory } = await supabase
       .from('categories')
-      .select('id')
+      .select('id, is_active')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
@@ -151,6 +197,13 @@ export async function DELETE(
       return NextResponse.json({ 
         error: 'Categoría no encontrada o no autorizada' 
       }, { status: 404 });
+    }
+
+    // Verificar si ya está desactivada
+    if (!existingCategory.is_active) {
+      return NextResponse.json({ 
+        error: 'La categoría ya está desactivada' 
+      }, { status: 400 });
     }
 
     // Verificar si la categoría está siendo usada
@@ -166,44 +219,31 @@ export async function DELETE(
       .eq('category_id', id)
       .limit(1);
 
-    if ((incomeUsage && incomeUsage.length > 0) || (expenseUsage && expenseUsage.length > 0)) {
-      // En lugar de eliminar, desactivar la categoría
-      const { data: deactivatedCategory, error: deactivateError } = await supabase
-        .from('categories')
-        .update({ is_active: false })
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+    const isInUse = (incomeUsage && incomeUsage.length > 0) || (expenseUsage && expenseUsage.length > 0);
 
-      if (deactivateError) {
-        console.error('Error al desactivar categoría:', deactivateError);
-        return NextResponse.json({ 
-          error: 'Error al desactivar la categoría' 
-        }, { status: 500 });
-      }
-
-      return NextResponse.json({
-        message: 'Categoría desactivada (estaba siendo utilizada)',
-        category: deactivatedCategory
-      });
-    }
-
-    // Si no está siendo usada, eliminarla completamente
-    const { error: deleteError } = await supabase
+    // Siempre desactivar en lugar de eliminar para mantener integridad
+    const { data: deactivatedCategory, error: deactivateError } = await supabase
       .from('categories')
-      .delete()
+      .update({ is_active: false })
       .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select()
+      .single();
 
-    if (deleteError) {
-      console.error('Error al eliminar categoría:', deleteError);
+    if (deactivateError) {
+      console.error('Error al desactivar categoría:', deactivateError);
       return NextResponse.json({ 
-        error: 'Error al eliminar la categoría' 
+        error: 'Error al desactivar la categoría' 
       }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'Categoría eliminada exitosamente' });
+    return NextResponse.json({
+      message: isInUse 
+        ? 'Categoría desactivada (estaba siendo utilizada)' 
+        : 'Categoría desactivada exitosamente',
+      category: deactivatedCategory,
+      wasInUse: isInUse
+    });
   } catch (error) {
     console.error('Error en DELETE /api/categories/[id]:', error);
     return NextResponse.json({ 

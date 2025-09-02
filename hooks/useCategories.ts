@@ -2,9 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Category } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 
-export const useCategories = (isLoaded: boolean, user: unknown) => {
+interface UseCategoriesOptions {
+  includeInactive?: boolean;
+}
+
+export const useCategories = (isLoaded: boolean, user: unknown, options: UseCategoriesOptions = {}) => {
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([]);
+  const [inactiveIncomeCategories, setInactiveIncomeCategories] = useState<Category[]>([]);
+  const [inactiveExpenseCategories, setInactiveExpenseCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -21,7 +27,7 @@ export const useCategories = (isLoaded: boolean, user: unknown) => {
         return;
       }
 
-      // Obtener categorías de ingresos
+      // Obtener categorías de ingresos activas
       const { data: incomeData, error: incomeError } = await supabase
         .from('categories')
         .select('*')
@@ -30,7 +36,7 @@ export const useCategories = (isLoaded: boolean, user: unknown) => {
         .eq('is_active', true)
         .order('name', { ascending: true });
 
-      // Obtener categorías de gastos
+      // Obtener categorías de gastos activas
       const { data: expenseData, error: expenseError } = await supabase
         .from('categories')
         .select('*')
@@ -49,12 +55,36 @@ export const useCategories = (isLoaded: boolean, user: unknown) => {
       
       setIncomeCategories(incomeData || []);
       setExpenseCategories(expenseData || []);
+
+      // Si se solicitan categorías inactivas, obtenerlas también
+      if (options.includeInactive) {
+        // Obtener categorías de ingresos inactivas
+        const { data: inactiveIncomeData } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'income')
+          .eq('is_active', false)
+          .order('name', { ascending: true });
+
+        // Obtener categorías de gastos inactivas
+        const { data: inactiveExpenseData } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'expense')
+          .eq('is_active', false)
+          .order('name', { ascending: true });
+
+        setInactiveIncomeCategories(inactiveIncomeData || []);
+        setInactiveExpenseCategories(inactiveExpenseData || []);
+      }
     } catch (error) {
       console.error('Error al cargar categorías:', error);
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, options.includeInactive]);
 
   const refresh = useCallback(async () => {
     await load();
@@ -67,6 +97,8 @@ export const useCategories = (isLoaded: boolean, user: unknown) => {
   return {
     incomeCategories,
     expenseCategories,
+    inactiveIncomeCategories,
+    inactiveExpenseCategories,
     loading,
     refresh
   };

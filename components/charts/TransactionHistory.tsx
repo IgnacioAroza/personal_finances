@@ -1,13 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Button } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Button, ConfirmDialog } from '@/components/ui';
 import { TrendingUp, TrendingDown, MoreVertical } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Transaction, Category } from '@/types/database';
 import { useState } from 'react';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import EditTransactionForm from '@/components/forms/EditTransactionForm';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
 
 interface TransactionHistoryProps {
