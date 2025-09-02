@@ -5,7 +5,6 @@ import { UserNav } from '@/components/user-nav'
 import Link from 'next/link'
 import './globals.css'
 import { Toaster } from 'sonner'
-import Link from 'next/link'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
