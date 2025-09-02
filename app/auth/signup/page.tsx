@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { getCallbackUrl } from '@/lib/utils/url'
 
 export default function SignUpPage() {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -24,6 +26,19 @@ export default function SignUpPage() {
     setError('')
     setMessage('')
 
+    // Validaciones
+    if (!firstName.trim()) {
+      setError('El nombre es requerido')
+      setLoading(false)
+      return
+    }
+
+    if (!lastName.trim()) {
+      setError('El apellido es requerido')
+      setLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden')
       setLoading(false)
@@ -36,18 +51,26 @@ export default function SignUpPage() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: getCallbackUrl(),
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim()
+        }
       },
     })
 
     if (error) {
       setError(error.message)
-    } else {
-      setMessage('¡Revisa tu email para confirmar tu cuenta!')
+    } else if (data.user) {
+      setMessage('¡Cuenta creada exitosamente! Redirigiendo...')
+      // Redirigir al dashboard después de un breve delay
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1500)
     }
     setLoading(false)
   }
@@ -57,7 +80,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getCallbackUrl()
+        redirectTo: `${window.location.origin}/dashboard`
       }
     })
     if (error) {
@@ -92,6 +115,33 @@ export default function SignUpPage() {
           )}
 
           <form onSubmit={handleSignUp} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">Nombre</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Tu nombre"
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Apellido</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Tu apellido"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
