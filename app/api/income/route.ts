@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     
@@ -63,8 +63,30 @@ export async function GET() {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Obtener todos los ingresos del usuario con información de categoría
-    const { data: income, error: selectError } = await supabase
+    // Parsear parámetros de búsqueda
+    const { searchParams } = new URL(request.url);
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+
+    // Validar parámetros de rango
+    if ((from && !to) || (!from && to)) {
+      return NextResponse.json({ 
+        error: 'Debe proporcionar ambos parámetros: from y to' 
+      }, { status: 400 });
+    }
+
+    // Validar formato de fechas
+    if (from && to) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(from) || !dateRegex.test(to)) {
+        return NextResponse.json({ 
+          error: 'Rango de fechas inválido. Use formato YYYY-MM-DD' 
+        }, { status: 400 });
+      }
+    }
+
+    // Construir query base
+    let query = supabase
       .from('income')
       .select(`
         *,
@@ -75,7 +97,15 @@ export async function GET() {
           color
         )
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', user.id);
+
+    // Aplicar filtro de rango si se proporciona
+    if (from && to) {
+      query = query.gte('date', from).lte('date', to);
+    }
+
+    // Ejecutar query con ordenamiento
+    const { data: income, error: selectError } = await query
       .order('date', { ascending: false });
 
     if (selectError) {

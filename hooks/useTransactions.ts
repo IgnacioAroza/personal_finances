@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Income, Expense, Transaction } from '@/types/database';
 import { ensureUserExists } from '@/lib/user-utils';
+import { getRange, type Timeframe } from '@/lib/utils/date';
 
-export const useTransactions = (isLoaded: boolean, user: unknown) => {
+interface TransactionOptions {
+  timeframe?: Timeframe;
+  referenceDate?: Date;
+}
+
+export const useTransactions = (
+  isLoaded: boolean, 
+  user: unknown, 
+  opts: TransactionOptions = {}
+) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +28,18 @@ export const useTransactions = (isLoaded: boolean, user: unknown) => {
         return;
       }
 
+      // Construir query params para filtros de fecha
+      let queryParams = '';
+      if (opts.timeframe && opts.timeframe !== 'all') {
+        const range = getRange(opts.timeframe, opts.referenceDate || new Date());
+        if (range) {
+          queryParams = `?from=${range.from}&to=${range.to}`;
+        }
+      }
+
       const [incomeRes, expenseRes] = await Promise.all([
-        fetch('/api/income'),
-        fetch('/api/expenses')
+        fetch(`/api/income${queryParams}`),
+        fetch(`/api/expenses${queryParams}`)
       ]);
       
       const incomeData = await incomeRes.json();
@@ -53,7 +72,7 @@ export const useTransactions = (isLoaded: boolean, user: unknown) => {
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user]);
+  }, [isLoaded, user, opts.timeframe, opts.referenceDate]);
 
   useEffect(() => {
     fetchTransactions();
