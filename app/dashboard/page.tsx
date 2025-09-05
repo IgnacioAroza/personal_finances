@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { FloatingActionButton, BottomSheet, LoadingState } from '@/components/ui';
 import { 
   ThemeToggle, 
@@ -10,13 +11,20 @@ import {
   TransactionHistory,
   QuickTransactionForm
 } from '@/components';
+import { TimeframeFilter } from '@/components/filters/TimeframeFilter';
 import { useUserInitialization } from '@/hooks/useUserInitialization';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useQuickActions } from '@/hooks/useQuickActions';
+import type { Timeframe } from '@/lib/utils/date';
 
 export default function DashboardPage() {
   const { user, isLoaded, isInitialized } = useUserInitialization();
+  
+  // Estados del filtro de tiempo
+  const [timeframe, setTimeframe] = useState<Timeframe>('all');
+  const [referenceDate, setReferenceDate] = useState<Date>(new Date());
+  
   const { 
     transactions, 
     totalIncome, 
@@ -24,7 +32,7 @@ export default function DashboardPage() {
     balance, 
     expensesByCategory,
     refetchTransactions 
-  } = useTransactions(isLoaded, user);
+  } = useTransactions(isLoaded, user, { timeframe, referenceDate });
   
   const { 
     incomeCategories, 
@@ -40,6 +48,32 @@ export default function DashboardPage() {
     selectTransactionType,
     goBackToSelector
   } = useQuickActions();
+
+  // Función para generar el label del período basado en el filtro
+  const getPeriodLabel = (): string => {
+    switch (timeframe) {
+      case 'all':
+        return 'Totales';
+      case 'day':
+        return new Intl.DateTimeFormat('es-ES', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }).format(referenceDate);
+      case 'week':
+        return `Semana del ${new Intl.DateTimeFormat('es-ES', {
+          day: 'numeric',
+          month: 'short'
+        }).format(referenceDate)}`;
+      case 'month':
+        return new Intl.DateTimeFormat('es-ES', {
+          month: 'long',
+          year: 'numeric'
+        }).format(referenceDate);
+      default:
+        return 'Totales';
+    }
+  };
 
   if (!isLoaded) {
     return <LoadingState message="Cargando aplicación" />;
@@ -70,11 +104,22 @@ export default function DashboardPage() {
         <ThemeToggle />
       </div>
 
+      {/* Filtro de Tiempo */}
+      <div className="mb-6">
+        <TimeframeFilter
+          value={timeframe}
+          onChange={setTimeframe}
+          referenceDate={referenceDate}
+          onReferenceDateChange={setReferenceDate}
+        />
+      </div>
+
       {/* Resumen Financiero */}
       <FinancialSummary 
         totalIncome={totalIncome}
         totalExpenses={totalExpenses}
         balance={balance}
+        periodLabel={getPeriodLabel()}
       />
 
       {/* Formularios Desktop - Solo visible en pantallas grandes */}

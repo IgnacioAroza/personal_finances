@@ -30,30 +30,64 @@ export function useUserInitialization() {
         }
 
         // Verificar si el usuario existe en nuestra tabla users
+        console.log('Checking if user exists in database...');
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id')
           .eq('id', authUser.id)
           .single();
 
+        console.log('User check result:', { userData, userError });
+
         if (userError && userError.code === 'PGRST116') {
           // Usuario no existe en nuestra tabla, lo creamos con nombres derivados de metadata
+          console.log('Creating new user in database...');
+          console.log('Auth user data:', {
+            id: authUser.id,
+            email: authUser.email,
+            metadata: authUser.user_metadata
+          });
+          
           const derived = deriveNamesFromMetadata(authUser.user_metadata);
-          const { error: insertError } = await supabase
+          console.log('Derived user data:', derived);
+          
+          const insertData = {
+            id: authUser.id,
+            email: authUser.email || '',
+            first_name: derived.first_name || '',
+            last_name: derived.last_name || '',
+            avatar_url: derived.avatar_url || '',
+          };
+          
+          console.log('Data to insert:', insertData);
+          
+          const { data: insertResult, error: insertError } = await supabase
             .from('users')
-            .insert({
-              id: authUser.id,
-              email: authUser.email || '',
-              first_name: derived.first_name || '',
-              last_name: derived.last_name || '',
-              avatar_url: derived.avatar_url || '',
-            });
+            .insert(insertData)
+            .select(); // Agregar select para ver qué se insertó
 
           if (insertError) {
-            console.error('Error creating user:', insertError);
+            console.error('Error creating user:', {
+              error: insertError,
+              message: insertError.message,
+              details: insertError.details,
+              hint: insertError.hint,
+              code: insertError.code
+            });
+            console.error('User data being inserted:', insertData);
           } else {
+            console.log('User created successfully:', insertResult);
             setIsInitialized(true);
           }
+        } else if (userError) {
+          // Error diferente al usuario no encontrado
+          console.error('Unexpected error checking user:', {
+            error: userError,
+            message: userError.message,
+            code: userError.code,
+            details: userError.details
+          });
+          setIsInitialized(false);
         } else if (userData) {
           // El usuario existe; si faltan nombres/imagen, completar desde metadata
           const { data: fullUserRow } = await supabase
