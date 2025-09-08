@@ -147,7 +147,7 @@ export default function DashboardPage() {
         />
         <TransactionHistory 
           transactions={transactions} 
-          limit={3}
+          limit={5}
           incomeCategories={incomeCategories}
           expenseCategories={expenseCategories}
           onChanged={refetchTransactions}
