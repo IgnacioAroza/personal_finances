@@ -15,7 +15,12 @@ export function AppHeader() {
           💰 Finanzas
         </Link>
         <div className="flex items-center gap-4">
-          {isLoaded && user && <CurrencySelector variant="compact" />}
+          {isLoaded && user && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Preferida:</span>
+              <CurrencySelector variant="compact" />
+            </div>
+          )}
           <UserNav />
         </div>
       </div>

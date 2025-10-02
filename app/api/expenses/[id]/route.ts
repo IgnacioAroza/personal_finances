@@ -68,7 +68,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { amount, description, date, category_id, notes } = body;
+    const { amount, description, date, category_id, notes, currency } = body;
 
     // Validar que el gasto pertenece al usuario
     const { data: existingExpense } = await supabase
@@ -92,6 +92,7 @@ export async function PATCH(
       date?: string;
       category_id?: string;
       notes?: string | null;
+      currency?: string;
     } = { updated_at: new Date().toISOString() };
     
     if (amount !== undefined) updateFields.amount = parseFloat(amount);
@@ -99,6 +100,7 @@ export async function PATCH(
     if (date !== undefined) updateFields.date = date;
     if (category_id !== undefined) updateFields.category_id = category_id;
     if (notes !== undefined) updateFields.notes = notes;
+    if (currency !== undefined) updateFields.currency = currency;
 
     // Actualizar el gasto
     const { data: updatedExpense, error: updateError } = await supabase

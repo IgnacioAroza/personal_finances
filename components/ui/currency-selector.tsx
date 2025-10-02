@@ -16,7 +16,7 @@ export function CurrencySelector({ className, variant = 'default' }: CurrencySel
 
   if (variant === 'compact') {
     return (
-      <div className={className}>
+      <div className={className} title="Moneda preferida para nuevas transacciones">
         <Select value={currentCurrency} onValueChange={(value: Currency) => setCurrency(value)}>
           <SelectTrigger className="w-20 h-8 text-xs">
             <SelectValue>
@@ -41,7 +41,7 @@ export function CurrencySelector({ className, variant = 'default' }: CurrencySel
   }
 
   return (
-    <div className={className}>
+    <div className={className} title="Moneda preferida para nuevas transacciones">
       <Select value={currentCurrency} onValueChange={(value: Currency) => setCurrency(value)}>
         <SelectTrigger className="w-36">
           <SelectValue>
