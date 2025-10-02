@@ -30,14 +30,11 @@ export function useUserInitialization() {
         }
 
         // Verificar si el usuario existe en nuestra tabla users
-        console.log('Checking if user exists in database...');
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('id')
           .eq('id', authUser.id)
           .single();
-
-        console.log('User check result:', { userData, userError });
 
         if (userError && userError.code === 'PGRST116') {
           // Usuario no existe en nuestra tabla, lo creamos con nombres derivados de metadata
