@@ -20,7 +20,7 @@ export const CURRENCIES: Record<Currency, {
   },
   USD: {
     code: 'USD',
-    symbol: 'US$',
+    symbol: 'U$D',
     name: 'Dólar Americano',
     locale: 'en-US',
     decimalPlaces: 2
@@ -42,15 +42,14 @@ export function formatCurrency(amount: number, currency: Currency): string {
   const config = CURRENCIES[currency];
   
   try {
-    // Usar Intl.NumberFormat para formateo apropiado
+    // Usar Intl.NumberFormat solo para formateo numérico, no de moneda
     const formatter = new Intl.NumberFormat(config.locale, {
-      style: 'currency',
-      currency: config.code,
       minimumFractionDigits: config.decimalPlaces,
       maximumFractionDigits: config.decimalPlaces
     });
     
-    return formatter.format(amount);
+    // Usar nuestro símbolo personalizado
+    return `${config.symbol}${formatter.format(amount)}`;
   } catch {
     // Fallback si el locale no está soportado
     return `${config.symbol}${amount.toFixed(config.decimalPlaces)}`;

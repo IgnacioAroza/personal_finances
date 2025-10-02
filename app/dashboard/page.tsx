@@ -12,7 +12,7 @@ import {
   QuickTransactionForm
 } from '@/components';
 import { TimeframeFilter } from '@/components/filters/TimeframeFilter';
-import { useCurrency } from '@/contexts/CurrencyContext';
+// import { useCurrency } from '@/contexts/CurrencyContext'; // No se usa más en el dashboard principal
 import { useUserInitialization } from '@/hooks/useUserInitialization';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
@@ -21,7 +21,7 @@ import type { Timeframe } from '@/lib/utils/date';
 
 export default function DashboardPage() {
   const { user, isLoaded, isInitialized } = useUserInitialization();
-  const { currentCurrency } = useCurrency();
+  // const { currentCurrency } = useCurrency(); // No se usa más en el dashboard principal
   
   // Estados del filtro de tiempo
   const [timeframe, setTimeframe] = useState<Timeframe>('all');
@@ -29,13 +29,11 @@ export default function DashboardPage() {
   
   const { 
     transactions, 
-    totalExpenses, 
-    expensesByCategory,
     refetchTransactions 
   } = useTransactions(isLoaded, user, { 
     timeframe, 
-    referenceDate, 
-    currency: currentCurrency 
+    referenceDate
+    // Removemos currency: currentCurrency para mostrar todas las monedas
   });
   
   const { 
@@ -144,8 +142,7 @@ export default function DashboardPage() {
       {/* Análisis y Historial */}
       <div className="space-y-4">
         <ExpenseAnalysis 
-          expensesByCategory={expensesByCategory}
-          totalExpenses={totalExpenses}
+          transactions={transactions}
         />
         <TransactionHistory 
           transactions={transactions} 

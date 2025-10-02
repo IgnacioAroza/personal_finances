@@ -12,7 +12,7 @@ import {
   Label
 } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CurrencySelector } from '@/components/ui/currency-selector';
+// import { CurrencySelector } from '@/components/ui/currency-selector'; // Usamos un selector local
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { PlusCircle, TrendingDown, Plus } from 'lucide-react';
 import CategoryModal from '@/components/categories/CategoryModal';
@@ -67,13 +67,13 @@ export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRe
       });
 
       if (response.ok) {
-        setForm({
+        setForm(prev => ({
           amount: "",
           description: "",
           date: new Date().toISOString().split("T")[0],
           category_id: "",
-          currency: currentCurrency,
-        });
+          currency: prev.currency, // Mantener la moneda seleccionada por el usuario
+        }));
         toast.success('Gasto agregado exitosamente');
         onExpenseAdded();
       } else {
@@ -120,18 +120,45 @@ export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRe
           <div className="space-y-2">
             <Label htmlFor="expense-amount">Monto</Label>
             <div className="flex gap-2">
-              <Input
-                id="expense-amount"
-                type="number"
-                placeholder="0.00"
-                value={form.amount}
-                onChange={(e) => updateForm('amount', e.target.value)}
-                className="flex-1"
-              />
-              <CurrencySelector 
-                variant="compact"
-                className="flex-shrink-0"
-              />
+              <div className="flex-1">
+                <Input
+                  id="expense-amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={form.amount}
+                  onChange={(e) => updateForm('amount', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="w-20">
+                <Select value={form.currency} onValueChange={(value: Currency) => updateForm('currency', value)}>
+                  <SelectTrigger className="w-full text-xs px-2">
+                    <SelectValue>
+                      {form.currency}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ARS" className="text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">ARS</span>
+                        <span className="text-muted-foreground">$</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="USD" className="text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">USD</span>
+                        <span className="text-muted-foreground">U$D</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="EUR" className="text-sm">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">EUR</span>
+                        <span className="text-muted-foreground">€</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div className="space-y-2">

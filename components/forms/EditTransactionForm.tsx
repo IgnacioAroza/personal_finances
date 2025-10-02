@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import type { Category, Transaction } from '@/types/database';
+import type { Category, Transaction, Currency } from '@/types/database';
 
 interface EditTransactionFormProps {
   transaction: Transaction;
@@ -16,6 +16,7 @@ export default function EditTransactionForm({ transaction, categories, onSaved, 
   const [description, setDescription] = useState<string>(transaction.description || '');
   const [date, setDate] = useState<string>(transaction.date);
   const [categoryId, setCategoryId] = useState<string>(transaction.category?.id || '');
+  const [currency, setCurrency] = useState<Currency>(transaction.currency);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -30,6 +31,7 @@ export default function EditTransactionForm({ transaction, categories, onSaved, 
           description,
           date,
           category_id: categoryId,
+          currency,
         }),
       });
       if (!res.ok) return;
@@ -44,7 +46,46 @@ export default function EditTransactionForm({ transaction, categories, onSaved, 
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="edit-amount">Monto</Label>
-        <Input id="edit-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input 
+              id="edit-amount" 
+              type="number" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="w-20">
+            <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
+              <SelectTrigger className="w-full text-xs px-2">
+                <SelectValue>
+                  {currency}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ARS" className="text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">ARS</span>
+                    <span className="text-muted-foreground">$</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="USD" className="text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">USD</span>
+                    <span className="text-muted-foreground">U$D</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="EUR" className="text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium">EUR</span>
+                    <span className="text-muted-foreground">€</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="edit-description">Descripción</Label>
