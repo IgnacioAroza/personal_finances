@@ -12,10 +12,12 @@ import {
   Label
 } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { PlusCircle, TrendingDown, Plus } from 'lucide-react';
 import CategoryModal from '@/components/categories/CategoryModal';
 import { toast } from 'sonner';
-import type { Category } from '@/types/database';
+import type { Category, Currency } from '@/types/database';
 
 interface ExpenseFormProps {
   categories: Category[];
@@ -28,14 +30,18 @@ interface ExpenseFormData {
   description: string;
   date: string;
   category_id: string;
+  currency: Currency;
 }
 
 export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRefresh }: ExpenseFormProps) {
+  const { currentCurrency } = useCurrency();
+  
   const [form, setForm] = useState<ExpenseFormData>({
     amount: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
     category_id: "",
+    currency: currentCurrency,
   });
   const [loading, setLoading] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -56,6 +62,7 @@ export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRe
           description: form.description,
           date: form.date,
           category_id: form.category_id,
+          currency: form.currency,
         }),
       });
 
@@ -65,6 +72,7 @@ export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRe
           description: "",
           date: new Date().toISOString().split("T")[0],
           category_id: "",
+          currency: currentCurrency,
         });
         toast.success('Gasto agregado exitosamente');
         onExpenseAdded();
@@ -111,13 +119,20 @@ export default function ExpenseForm({ categories, onExpenseAdded, onCategoriesRe
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="expense-amount">Monto</Label>
-            <Input
-              id="expense-amount"
-              type="number"
-              placeholder="0.00"
-              value={form.amount}
-              onChange={(e) => updateForm('amount', e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="expense-amount"
+                type="number"
+                placeholder="0.00"
+                value={form.amount}
+                onChange={(e) => updateForm('amount', e.target.value)}
+                className="flex-1"
+              />
+              <CurrencySelector 
+                variant="compact"
+                className="flex-shrink-0"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="expense-description">Descripción</Label>

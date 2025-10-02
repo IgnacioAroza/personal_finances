@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Income, Expense, Transaction } from '@/types/database';
+import type { Income, Expense, Transaction, Currency } from '@/types/database';
 import { ensureUserExists } from '@/lib/user-utils';
 import { getRange, type Timeframe } from '@/lib/utils/date';
 
 interface TransactionOptions {
   timeframe?: Timeframe;
   referenceDate?: Date;
+  currency?: Currency;
 }
 
 export const useTransactions = (
@@ -28,14 +29,23 @@ export const useTransactions = (
         return;
       }
 
-      // Construir query params para filtros de fecha
-      let queryParams = '';
+      // Construir query params para filtros de fecha y moneda
+      const params = new URLSearchParams();
+      
       if (opts.timeframe && opts.timeframe !== 'all') {
         const range = getRange(opts.timeframe, opts.referenceDate || new Date());
         if (range) {
-          queryParams = `?from=${range.from}&to=${range.to}`;
+          params.set('from', range.from);
+          params.set('to', range.to);
         }
       }
+      
+      if (opts.currency) {
+        params.set('currency', opts.currency);
+      }
+      
+      const queryString = params.toString();
+      const queryParams = queryString ? `?${queryString}` : '';
 
       const [incomeRes, expenseRes] = await Promise.all([
         fetch(`/api/income${queryParams}`),
@@ -52,8 +62,11 @@ export const useTransactions = (
           amount: income.amount,
           description: income.description,
           date: income.date,
+          currency: income.currency,
           category: income.categories || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
           notes: income.notes,
+          created_at: income.created_at,
+          updated_at: income.updated_at,
         })),
         ...(expenseData || []).map((expense: Expense) => ({
           id: expense.id,
@@ -61,18 +74,21 @@ export const useTransactions = (
           amount: expense.amount,
           description: expense.description,
           date: expense.date,
+          currency: expense.currency,
           category: expense.categories || { id: '', name: 'Sin categoría', icon: '📦', color: '#6B7280' },
           notes: expense.notes,
+          created_at: expense.created_at,
+          updated_at: expense.updated_at,
         }))
       ];
       
-      setTransactions(allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      setTransactions(allTransactions.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
     } catch {
       // Error silencioso
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, user, opts.timeframe, opts.referenceDate]);
+  }, [isLoaded, user, opts.timeframe, opts.referenceDate, opts.currency]);
 
   useEffect(() => {
     fetchTransactions();

@@ -1,9 +1,21 @@
+// Tipos de monedas soportadas
+export type Currency = 'ARS' | 'USD' | 'EUR';
+
 export interface User {
   id: string;
   email: string;
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  default_currency: Currency;
+  active_currencies: Currency[];
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +41,7 @@ export interface Income {
   description: string;
   date: string;
   category_id: string;
+  currency: Currency;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -42,6 +55,7 @@ export interface Expense {
   description: string;
   date: string;
   category_id: string;
+  currency: Currency;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -55,13 +69,17 @@ export interface Transaction {
   description: string;
   date: string;
   category: Categories;
+  currency: Currency;
   notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FinancialSummary {
   totalIncome: number;
   totalExpenses: number;
   balance: number;
+  currency: Currency;
 }
 
 export interface ChartData {

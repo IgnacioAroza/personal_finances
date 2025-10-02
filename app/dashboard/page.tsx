@@ -12,6 +12,7 @@ import {
   QuickTransactionForm
 } from '@/components';
 import { TimeframeFilter } from '@/components/filters/TimeframeFilter';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useUserInitialization } from '@/hooks/useUserInitialization';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
@@ -20,6 +21,7 @@ import type { Timeframe } from '@/lib/utils/date';
 
 export default function DashboardPage() {
   const { user, isLoaded, isInitialized } = useUserInitialization();
+  const { currentCurrency } = useCurrency();
   
   // Estados del filtro de tiempo
   const [timeframe, setTimeframe] = useState<Timeframe>('all');
@@ -27,12 +29,14 @@ export default function DashboardPage() {
   
   const { 
     transactions, 
-    totalIncome, 
     totalExpenses, 
-    balance, 
     expensesByCategory,
     refetchTransactions 
-  } = useTransactions(isLoaded, user, { timeframe, referenceDate });
+  } = useTransactions(isLoaded, user, { 
+    timeframe, 
+    referenceDate, 
+    currency: currentCurrency 
+  });
   
   const { 
     incomeCategories, 
@@ -116,9 +120,7 @@ export default function DashboardPage() {
 
       {/* Resumen Financiero */}
       <FinancialSummary 
-        totalIncome={totalIncome}
-        totalExpenses={totalExpenses}
-        balance={balance}
+        transactions={transactions}
         periodLabel={getPeriodLabel()}
       />
 
