@@ -1,10 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Button, ConfirmDialog } from '@/components/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Button, ConfirmDialog, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { TrendingUp, TrendingDown, MoreVertical, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import type { Transaction, Category } from '@/types/database';
-import { useState, useEffect } from 'react';
+import { formatCurrency } from '@/lib/utils/currency';
+import type { Transaction, Category, Currency } from '@/types/database';
+import { useState, useEffect, useMemo } from 'react';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import EditTransactionForm from '@/components/forms/EditTransactionForm';
 import { toast } from 'sonner';
@@ -43,7 +43,7 @@ const TransactionItem: React.FC<{
           transaction.type === "income" ? "text-green-600" : "text-red-600"
         }`}
       >
-        {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
+        {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount, transaction.currency)}
       </span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -65,6 +65,19 @@ const TransactionItem: React.FC<{
 );
 
 export default function TransactionHistory({ transactions, limit = 5, incomeCategories = [], expenseCategories = [], onChanged }: TransactionHistoryProps) {
+  // Estado para el filtro de moneda
+  const [displayCurrency, setDisplayCurrency] = useState<Currency | 'all'>('all');
+  
+  // Filtrar transacciones por moneda y ordenar por fecha de actualización
+  const filteredTransactions = useMemo(() => {
+    const filtered = displayCurrency === 'all' 
+      ? transactions 
+      : transactions.filter(t => t.currency === displayCurrency);
+    
+    // Ordenar por fecha de actualización (más recientes primero)
+    return filtered.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }, [transactions, displayCurrency]);
+
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(limit);
@@ -74,22 +87,22 @@ export default function TransactionHistory({ transactions, limit = 5, incomeCate
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
 
-  // Cálculos de paginación
-  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  // Cálculos de paginación (ahora basados en transacciones filtradas)
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   
   // Transacciones a mostrar
-  const paginatedTransactions = transactions.slice(startIndex, endIndex);
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
   
   // Para móvil: mostrar más transacciones progresivamente O usar paginación
-  const mobileDisplayCount = showAllMobile ? transactions.length : itemsPerPage;
-  const mobileTransactions = showAllMobile ? transactions : paginatedTransactions;
-  const hasMoreToShow = !showAllMobile && transactions.length > itemsPerPage;
+  const mobileDisplayCount = showAllMobile ? filteredTransactions.length : itemsPerPage;
+  const mobileTransactions = showAllMobile ? filteredTransactions : paginatedTransactions;
+  const hasMoreToShow = !showAllMobile && filteredTransactions.length > itemsPerPage;
 
   // Información de paginación
   const startItem = startIndex + 1;
-  const endItem = Math.min(endIndex, transactions.length);
+  const endItem = Math.min(endIndex, filteredTransactions.length);
 
   // Funciones de navegación
   const goToPage = (page: number) => {
@@ -107,21 +120,39 @@ export default function TransactionHistory({ transactions, limit = 5, incomeCate
     setShowAllMobile(false);
   };
 
-  // Efecto para resetear paginación cuando cambian las transacciones
+  // Efecto para resetear paginación cuando cambian las transacciones o el filtro
   useEffect(() => {
     resetPagination();
-  }, [transactions.length]);
+  }, [filteredTransactions.length]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Historial de Transacciones</CardTitle>
-        <CardDescription>
-          Últimas transacciones registradas
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Historial de Transacciones</CardTitle>
+            <CardDescription>
+              Últimas transacciones registradas
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Moneda:</span>
+            <Select value={displayCurrency} onValueChange={(value: Currency | 'all') => setDisplayCurrency(value)}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="ARS">ARS</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        {transactions.length > 0 ? (
+        {filteredTransactions.length > 0 ? (
           <>
             {/* Lista de transacciones - Desktop: paginadas, Mobile: mostrar más */}
             <div className="space-y-2">
@@ -151,12 +182,12 @@ export default function TransactionHistory({ transactions, limit = 5, incomeCate
             </div>
 
             {/* Controles de paginación - Desktop */}
-            {transactions.length > itemsPerPage && (
+            {filteredTransactions.length > itemsPerPage && (
               <div className="hidden sm:flex items-center justify-between mt-4 pt-4 border-t border-border">
                 {/* Información de paginación */}
                 <div className="flex items-center gap-4">
                   <p className="text-sm text-muted-foreground">
-                    Mostrando {startItem} a {endItem} de {transactions.length} transacciones
+                    Mostrando {startItem} a {endItem} de {filteredTransactions.length} transacciones
                   </p>
                   
                   {/* Selector de elementos por página */}
@@ -254,19 +285,19 @@ export default function TransactionHistory({ transactions, limit = 5, incomeCate
                   className="w-full border-2 border-dashed border-border hover:border-solid hover:bg-accent/30 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-[1.02]"
                 >
                   <span className="text-sm">
-                    Mostrar más transacciones ({transactions.length - mobileDisplayCount} restantes)
+                    Mostrar más transacciones ({filteredTransactions.length - mobileDisplayCount} restantes)
                   </span>
                 </Button>
               </div>
             )}
 
             {/* Navegación simple para móvil - Solo cuando hay paginación */}
-            {transactions.length > itemsPerPage && !showAllMobile && (
+            {filteredTransactions.length > itemsPerPage && !showAllMobile && (
               <div className="block sm:hidden mt-4 space-y-3">
                 {/* Información de página */}
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages} • {transactions.length} transacciones
+                    Página {currentPage} de {totalPages} • {filteredTransactions.length} transacciones
                   </p>
                 </div>
                 
@@ -330,7 +361,10 @@ export default function TransactionHistory({ transactions, limit = 5, incomeCate
           </>
         ) : (
           <p className="text-muted-foreground text-center py-8">
-            No hay transacciones registradas
+            {transactions.length === 0 
+              ? "No hay transacciones registradas"
+              : `No hay transacciones ${displayCurrency === 'all' ? '' : `en ${displayCurrency}`}`
+            }
           </p>
         )}
       </CardContent>

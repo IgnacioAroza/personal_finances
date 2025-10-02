@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { isValidCurrency } from '@/lib/utils/currency';
 
 export async function POST(request: Request) {
   try {
@@ -13,12 +14,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { amount, description, date, category_id, notes } = body;
+    const { amount, description, date, category_id, notes, currency = 'ARS' } = body;
 
     // Validar datos requeridos
     if (!amount || !date || !category_id) {
       return NextResponse.json({ 
         error: 'Faltan campos requeridos' 
+      }, { status: 400 });
+    }
+
+    // Validar currency
+    if (!isValidCurrency(currency)) {
+      return NextResponse.json({ 
+        error: 'Moneda inválida. Use ARS, USD o EUR' 
       }, { status: 400 });
     }
 
@@ -31,6 +39,7 @@ export async function POST(request: Request) {
         description: description ?? null,
         date,
         category_id,
+        currency,
         notes: notes || null
       })
       .select()
@@ -67,6 +76,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    const currency = searchParams.get('currency');
 
     // Validar parámetros de rango
     if ((from && !to) || (!from && to)) {
@@ -83,6 +93,13 @@ export async function GET(request: Request) {
           error: 'Rango de fechas inválido. Use formato YYYY-MM-DD' 
         }, { status: 400 });
       }
+    }
+
+    // Validar currency si se proporciona
+    if (currency && !isValidCurrency(currency)) {
+      return NextResponse.json({ 
+        error: 'Moneda inválida. Use ARS, USD o EUR' 
+      }, { status: 400 });
     }
 
     // Construir query base
@@ -102,6 +119,11 @@ export async function GET(request: Request) {
     // Aplicar filtro de rango si se proporciona
     if (from && to) {
       query = query.gte('date', from).lte('date', to);
+    }
+
+    // Aplicar filtro de currency si se proporciona
+    if (currency) {
+      query = query.eq('currency', currency);
     }
 
     // Ejecutar query con ordenamiento

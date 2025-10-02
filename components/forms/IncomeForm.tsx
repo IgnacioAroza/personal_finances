@@ -12,10 +12,12 @@ import {
   Label
 } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { PlusCircle, TrendingUp, Plus } from 'lucide-react';
 import CategoryModal from '@/components/categories/CategoryModal';
 import { toast } from 'sonner';
-import type { Categories } from '@/types/database';
+import type { Categories, Currency } from '@/types/database';
 
 interface IncomeFormProps {
   categories: Categories[];
@@ -28,14 +30,18 @@ interface IncomeFormData {
   description: string;
   date: string;
   category_id: string;
+  currency: Currency;
 }
 
 export default function IncomeForm({ categories, onIncomeAdded, onCategoriesRefresh }: IncomeFormProps) {
+  const { currentCurrency } = useCurrency();
+  
   const [form, setForm] = useState<IncomeFormData>({
     amount: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
     category_id: "",
+    currency: currentCurrency,
   });
   const [loading, setLoading] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -56,6 +62,7 @@ export default function IncomeForm({ categories, onIncomeAdded, onCategoriesRefr
           description: form.description,
           date: form.date,
           category_id: form.category_id,
+          currency: form.currency,
         }),
       });
 
@@ -65,6 +72,7 @@ export default function IncomeForm({ categories, onIncomeAdded, onCategoriesRefr
           description: "",
           date: new Date().toISOString().split("T")[0],
           category_id: "",
+          currency: currentCurrency,
         });
         toast.success('Ingreso agregado exitosamente');
         onIncomeAdded();
@@ -111,13 +119,20 @@ export default function IncomeForm({ categories, onIncomeAdded, onCategoriesRefr
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="income-amount">Monto</Label>
-            <Input
-              id="income-amount"
-              type="number"
-              placeholder="0.00"
-              value={form.amount}
-              onChange={(e) => updateForm('amount', e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="income-amount"
+                type="number"
+                placeholder="0.00"
+                value={form.amount}
+                onChange={(e) => updateForm('amount', e.target.value)}
+                className="flex-1"
+              />
+              <CurrencySelector 
+                variant="compact"
+                className="flex-shrink-0"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="income-description">Descripción</Label>
